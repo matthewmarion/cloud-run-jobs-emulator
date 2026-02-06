@@ -1,0 +1,17 @@
+services:
+  cloud-run-emulator:
+    image: cloud-run-jobs-emulator:latest
+    build:
+      context: ..
+      dockerfile: Dockerfile
+    ports:
+      - "8123:8123"
+    volumes:
+      - ./jobs.yaml:/etc/emulator/jobs.yaml
+      - /var/run/docker.sock:/var/run/docker.sock
+    environment:
+      JOBS_CONFIG: /etc/emulator/jobs.yaml
+      EXECUTOR: docker
+      LOG_LEVEL: debug
+      PROJECT_ID: fake-project
+      REGION: us-central1

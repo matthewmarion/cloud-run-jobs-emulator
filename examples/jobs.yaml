@@ -1,0 +1,18 @@
+jobs:
+  - name: discovery
+    image: my-registry/ai-engine:latest
+    command: ["python", "-m", "examples.jobs.discovery"]
+    env:
+      ENVIRONMENT: local
+      GCS_PROJECT_ID: fake-project
+      CALLBACK_BACKEND_URL: http://host.docker.internal:8000/api/v1/callbacks
+    timeout: 3600s
+
+  - name: analysis
+    image: my-registry/ai-engine:latest
+    command: ["python", "-m", "examples.jobs.analysis"]
+    env:
+      ENVIRONMENT: local
+      GCS_PROJECT_ID: fake-project
+      CALLBACK_BACKEND_URL: http://host.docker.internal:8000/api/v1/callbacks
+    timeout: 3600s
