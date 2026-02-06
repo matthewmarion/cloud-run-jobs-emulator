@@ -9,8 +9,8 @@ import (
 	"google.golang.org/grpc/reflection"
 
 	runpb "cloud.google.com/go/run/apiv2/runpb"
-	"github.com/mattkinnersley/cloud-run-jobs-emulator/internal/executor"
-	"github.com/mattkinnersley/cloud-run-jobs-emulator/internal/state"
+	"github.com/matthewmarion/cloud-run-jobs-emulator/internal/executor"
+	"github.com/matthewmarion/cloud-run-jobs-emulator/internal/state"
 )
 
 type Server struct {

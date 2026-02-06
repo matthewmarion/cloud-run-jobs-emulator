@@ -18,7 +18,7 @@ Works as a drop-in replacement with the official `google-cloud-run` client libra
 ```yaml
 services:
   cloud-run-emulator:
-    image: ghcr.io/mattkinnersley/cloud-run-jobs-emulator:latest
+    image: ghcr.io/matthewmarion/cloud-run-jobs-emulator:latest
     ports:
       - "8123:8123"
     volumes:

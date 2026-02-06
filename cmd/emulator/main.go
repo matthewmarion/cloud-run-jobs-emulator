@@ -7,10 +7,10 @@ import (
 	"os/signal"
 	"syscall"
 
-	"github.com/mattkinnersley/cloud-run-jobs-emulator/internal/config"
-	"github.com/mattkinnersley/cloud-run-jobs-emulator/internal/executor"
-	"github.com/mattkinnersley/cloud-run-jobs-emulator/internal/server"
-	"github.com/mattkinnersley/cloud-run-jobs-emulator/internal/state"
+	"github.com/matthewmarion/cloud-run-jobs-emulator/internal/config"
+	"github.com/matthewmarion/cloud-run-jobs-emulator/internal/executor"
+	"github.com/matthewmarion/cloud-run-jobs-emulator/internal/server"
+	"github.com/matthewmarion/cloud-run-jobs-emulator/internal/state"
 )
 
 func main() {
