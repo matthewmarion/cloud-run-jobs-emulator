@@ -15,3 +15,5 @@ services:
       LOG_LEVEL: debug
       PROJECT_ID: fake-project
       REGION: us-central1
+      # Optional: expose host GPUs to spawned job containers (requires NVIDIA Container Toolkit)
+      # DOCKER_GPU: "true"
