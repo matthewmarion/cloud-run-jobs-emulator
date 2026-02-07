@@ -5,9 +5,11 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
+	"os"
 	"time"
 
 	"github.com/docker/docker/api/types/container"
+	"github.com/docker/docker/api/types/network"
 	"github.com/docker/docker/client"
 	"github.com/docker/docker/pkg/stdcopy"
 	"github.com/matthewmarion/cloud-run-jobs-emulator/internal/state"
@@ -17,11 +19,17 @@ import (
 type DockerExecutorOpts struct {
 	// ForwardLogs streams container stdout/stderr to the emulator logger when true.
 	ForwardLogs bool
+	// Network is the Docker network to attach spawned containers to.
+	// "auto" (default) will attempt to detect the network of the emulator's own
+	// container. "host" uses host networking. Any other value is treated as a
+	// network name to join.
+	Network string
 }
 
 type DockerExecutor struct {
 	client      *client.Client
 	forwardLogs bool
+	network     string // resolved network name (empty means host mode)
 }
 
 func NewDockerExecutor(opts DockerExecutorOpts) (*DockerExecutor, error) {
@@ -29,7 +37,66 @@ func NewDockerExecutor(opts DockerExecutorOpts) (*DockerExecutor, error) {
 	if err != nil {
 		return nil, fmt.Errorf("creating docker client: %w", err)
 	}
-	return &DockerExecutor{client: cli, forwardLogs: opts.ForwardLogs}, nil
+
+	netName := resolveNetwork(cli, opts.Network)
+
+	return &DockerExecutor{client: cli, forwardLogs: opts.ForwardLogs, network: netName}, nil
+}
+
+// resolveNetwork determines which Docker network spawned containers should join.
+func resolveNetwork(cli *client.Client, configured string) string {
+	switch configured {
+	case "host":
+		return ""
+	case "", "auto":
+		return detectOwnNetwork(cli)
+	default:
+		return configured
+	}
+}
+
+// detectOwnNetwork inspects the emulator's own container to find the Docker
+// network it belongs to. It uses the hostname (which Docker sets to the
+// container ID by default). Returns "" if detection fails (e.g. not running
+// in Docker).
+func detectOwnNetwork(cli *client.Client) string {
+	hostname, err := os.Hostname()
+	if err != nil {
+		slog.Debug("network auto-detect: cannot read hostname", "error", err)
+		return ""
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	info, err := cli.ContainerInspect(ctx, hostname)
+	if err != nil {
+		slog.Debug("network auto-detect: cannot inspect own container", "hostname", hostname, "error", err)
+		return ""
+	}
+
+	// Prefer the first non-default bridge network (compose networks, custom
+	// networks, etc.). Fall back to any network found.
+	var fallback string
+	for name := range info.NetworkSettings.Networks {
+		if name == "bridge" || name == "host" || name == "none" {
+			continue
+		}
+		slog.Info("network auto-detect: found network", "network", name)
+		return name
+	}
+	if fallback == "" {
+		for name := range info.NetworkSettings.Networks {
+			fallback = name
+			break
+		}
+	}
+	if fallback != "" {
+		slog.Info("network auto-detect: using fallback network", "network", fallback)
+	} else {
+		slog.Debug("network auto-detect: no networks found on own container")
+	}
+	return fallback
 }
 
 // lineLogWriter buffers writes and logs each complete line to slog.
@@ -74,15 +141,29 @@ func (e *DockerExecutor) Run(exec *state.Execution, env map[string]string) {
 		envSlice = append(envSlice, fmt.Sprintf("%s=%s", k, v))
 	}
 
-	logger.Info("creating container")
+	logger.Info("creating container", "network", e.networkDescription())
+
+	hostCfg := &container.HostConfig{}
+	var netCfg *network.NetworkingConfig
+
+	if e.network != "" {
+		// Attach to the specified network so the container can resolve
+		// other services (e.g. host.docker.internal, compose services).
+		hostCfg.NetworkMode = container.NetworkMode(e.network)
+		netCfg = &network.NetworkingConfig{
+			EndpointsConfig: map[string]*network.EndpointSettings{
+				e.network: {},
+			},
+		}
+	} else {
+		hostCfg.NetworkMode = "host"
+	}
 
 	resp, err := e.client.ContainerCreate(ctx, &container.Config{
 		Image: exec.Job.Image,
 		Cmd:   exec.Job.Command,
 		Env:   envSlice,
-	}, &container.HostConfig{
-		NetworkMode: "host",
-	}, nil, nil, "")
+	}, hostCfg, netCfg, nil, "")
 	if err != nil {
 		logger.Error("failed to create container", "error", err)
 		exec.Status = state.StatusFailed
@@ -157,6 +238,13 @@ func (e *DockerExecutor) streamContainerLogs(ctx context.Context, containerID st
 	_, _ = stdcopy.StdCopy(stdoutWriter, stderrWriter, rc)
 	stdoutWriter.Flush()
 	stderrWriter.Flush()
+}
+
+func (e *DockerExecutor) networkDescription() string {
+	if e.network == "" {
+		return "host"
+	}
+	return e.network
 }
 
 func (e *DockerExecutor) Cancel(exec *state.Execution) error {

@@ -32,6 +32,7 @@ type Config struct {
 	ProjectID            string
 	Region               string
 	ForwardContainerLogs bool
+	DockerNetwork        string
 	Jobs                 *JobsConfig
 }
 
@@ -44,6 +45,7 @@ func Load() (*Config, error) {
 		ProjectID:            getEnv("PROJECT_ID", "fake-project"),
 		Region:               getEnv("REGION", "us-central1"),
 		ForwardContainerLogs: getEnvBool("FORWARD_CONTAINER_LOGS", false),
+		DockerNetwork:        getEnv("DOCKER_NETWORK", "auto"),
 	}
 
 	jobs, err := loadJobsConfig(cfg.JobsFile)
