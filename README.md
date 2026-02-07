@@ -31,6 +31,20 @@ services:
       # FORWARD_CONTAINER_LOGS: "true"
 ```
 
+#### Networking
+
+When running inside Docker Compose, the emulator **automatically detects** the Compose network and attaches spawned job containers to it. This means job containers can resolve `host.docker.internal` and other Compose service names out of the box — no extra configuration needed.
+
+If auto-detection doesn't suit your setup, override it with `DOCKER_NETWORK`:
+
+```yaml
+environment:
+  # Use a specific network
+  DOCKER_NETWORK: my-custom-network
+  # Or fall back to host networking (legacy behaviour)
+  DOCKER_NETWORK: host
+```
+
 ### From Source
 
 ```bash
@@ -68,6 +82,7 @@ Jobs can also be created at runtime via the `CreateJob` API.
 | `PROJECT_ID` | `fake-project` | Default GCP project ID |
 | `REGION` | `us-central1` | Default region |
 | `FORWARD_CONTAINER_LOGS` | `false` | When `true` (or `1`/`yes`/`on`), stream container stdout/stderr to the emulator logs. Useful for debugging failing jobs. |
+| `DOCKER_NETWORK` | `auto` | Docker network for spawned job containers. `auto` detects the emulator's own network (e.g. the Compose network), `host` uses host networking, or pass an explicit network name. |
 
 ## Client Setup
 
