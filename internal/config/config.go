@@ -34,6 +34,7 @@ type Config struct {
 	ForwardContainerLogs bool
 	DockerNetwork        string
 	DockerExtraHosts     []string
+	DockerGPU            bool
 	Jobs                 *JobsConfig
 }
 
@@ -48,6 +49,7 @@ func Load() (*Config, error) {
 		ForwardContainerLogs: getEnvBool("FORWARD_CONTAINER_LOGS", false),
 		DockerNetwork:        getEnv("DOCKER_NETWORK", "auto"),
 		DockerExtraHosts:     parseExtraHosts(os.Getenv("DOCKER_EXTRA_HOSTS")),
+		DockerGPU:            getEnvBool("DOCKER_GPU", false),
 	}
 
 	jobs, err := loadJobsConfig(cfg.JobsFile)

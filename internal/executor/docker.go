@@ -28,6 +28,9 @@ type DockerExecutorOpts struct {
 	// (equivalent to docker run --add-host). Useful for e.g.
 	// "host.docker.internal:host-gateway" so containers can reach the Docker host.
 	ExtraHosts []string
+	// GPU enables GPU passthrough for spawned containers (equivalent to
+	// docker run --gpus all). Requires the NVIDIA Container Toolkit on the host.
+	GPU bool
 }
 
 type DockerExecutor struct {
@@ -35,6 +38,7 @@ type DockerExecutor struct {
 	forwardLogs bool
 	network     string // resolved network name (empty means host mode)
 	extraHosts  []string
+	gpu         bool
 }
 
 func NewDockerExecutor(opts DockerExecutorOpts) (*DockerExecutor, error) {
@@ -45,7 +49,7 @@ func NewDockerExecutor(opts DockerExecutorOpts) (*DockerExecutor, error) {
 
 	netName := resolveNetwork(cli, opts.Network)
 
-	return &DockerExecutor{client: cli, forwardLogs: opts.ForwardLogs, network: netName, extraHosts: opts.ExtraHosts}, nil
+	return &DockerExecutor{client: cli, forwardLogs: opts.ForwardLogs, network: netName, extraHosts: opts.ExtraHosts, gpu: opts.GPU}, nil
 }
 
 // resolveNetwork determines which Docker network spawned containers should join.
@@ -150,6 +154,18 @@ func (e *DockerExecutor) Run(exec *state.Execution, env map[string]string) {
 
 	hostCfg := &container.HostConfig{
 		ExtraHosts: e.extraHosts,
+	}
+
+	if e.gpu {
+		hostCfg.Resources = container.Resources{
+			DeviceRequests: []container.DeviceRequest{
+				{
+					Count:        -1, // all GPUs
+					Capabilities: [][]string{{"gpu"}},
+				},
+			},
+		}
+		logger.Info("GPU passthrough enabled for container")
 	}
 	var netCfg *network.NetworkingConfig
 

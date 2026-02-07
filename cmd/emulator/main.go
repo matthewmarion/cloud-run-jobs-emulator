@@ -42,12 +42,13 @@ func main() {
 			ForwardLogs: cfg.ForwardContainerLogs,
 			Network:     cfg.DockerNetwork,
 			ExtraHosts:  cfg.DockerExtraHosts,
+			GPU:         cfg.DockerGPU,
 		})
 		if err != nil {
 			slog.Error("failed to create docker executor", "error", err)
 			os.Exit(1)
 		}
-		slog.Info("using docker executor", "forward_container_logs", cfg.ForwardContainerLogs)
+		slog.Info("using docker executor", "forward_container_logs", cfg.ForwardContainerLogs, "gpu", cfg.DockerGPU)
 	case "subprocess":
 		exec = executor.NewSubprocessExecutor()
 		slog.Info("using subprocess executor")

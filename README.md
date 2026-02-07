@@ -56,6 +56,19 @@ environment:
 
 This injects `--add-host host.docker.internal:host-gateway` into every spawned container, so they can call `http://host.docker.internal:8000/...` to reach host-local services. Combine this with a `CALLBACK_URL` like `http://host.docker.internal:8000/callback` in your job config for local dev workflows where both Docker containers and bare-metal processes need to talk to each other.
 
+#### GPU Passthrough
+
+If your job containers need access to NVIDIA GPUs (e.g. for ML inference with PyTorch/TensorFlow), set `DOCKER_GPU`:
+
+```yaml
+environment:
+  DOCKER_GPU: "true"
+```
+
+This adds `--gpus all` to every spawned container, exposing all host GPUs to the job. Requires the [NVIDIA Container Toolkit](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/install-guide.html) to be installed on the Docker host.
+
+> **Note:** `DOCKER_GPU` is a Docker-level setting on the *emulator* — it controls whether the host GPU hardware is visible inside spawned containers. This is separate from any app-level toggles like `PROCESSING_USE_GPU` that your application may read. Both must be set: the emulator needs `DOCKER_GPU=true` to expose the GPU, and your app needs its own flag to actually use it.
+
 ### From Source
 
 ```bash
@@ -95,6 +108,7 @@ Jobs can also be created at runtime via the `CreateJob` API.
 | `FORWARD_CONTAINER_LOGS` | `false` | When `true` (or `1`/`yes`/`on`), stream container stdout/stderr to the emulator logs. Useful for debugging failing jobs. |
 | `DOCKER_NETWORK` | `auto` | Docker network for spawned job containers. `auto` detects the emulator's own network (e.g. the Compose network), `host` uses host networking, or pass an explicit network name. |
 | `DOCKER_EXTRA_HOSTS` | _(none)_ | Comma-separated `host:ip` mappings injected into spawned containers (equivalent to `docker run --add-host`). Example: `host.docker.internal:host-gateway` lets job containers reach the Docker host. |
+| `DOCKER_GPU` | `false` | When `true`, passes `--gpus all` to spawned containers, exposing host NVIDIA GPUs. Requires the [NVIDIA Container Toolkit](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/install-guide.html) on the Docker host. |
 
 ## Client Setup
 
