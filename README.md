@@ -27,6 +27,8 @@ services:
     environment:
       JOBS_CONFIG: /etc/emulator/jobs.yaml
       LOG_LEVEL: debug
+      # Optional: stream job container logs to the emulator (helps debug failures)
+      # FORWARD_CONTAINER_LOGS: "true"
 ```
 
 ### From Source
@@ -65,6 +67,7 @@ Jobs can also be created at runtime via the `CreateJob` API.
 | `LOG_LEVEL` | `info` | Log level: `debug`, `info`, `warn`, `error` |
 | `PROJECT_ID` | `fake-project` | Default GCP project ID |
 | `REGION` | `us-central1` | Default region |
+| `FORWARD_CONTAINER_LOGS` | `false` | When `true` (or `1`/`yes`/`on`), stream container stdout/stderr to the emulator logs. Useful for debugging failing jobs. |
 
 ## Client Setup
 

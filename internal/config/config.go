@@ -3,6 +3,7 @@ package config
 import (
 	"fmt"
 	"os"
+	"strings"
 
 	"gopkg.in/yaml.v3"
 )
@@ -24,23 +25,25 @@ type JobsConfig struct {
 }
 
 type Config struct {
-	Port      string
-	JobsFile  string
-	Executor  string
-	LogLevel  string
-	ProjectID string
-	Region    string
-	Jobs      *JobsConfig
+	Port                 string
+	JobsFile             string
+	Executor             string
+	LogLevel             string
+	ProjectID            string
+	Region               string
+	ForwardContainerLogs bool
+	Jobs                 *JobsConfig
 }
 
 func Load() (*Config, error) {
 	cfg := &Config{
-		Port:      getEnv("PORT", "8123"),
-		JobsFile:  getEnv("JOBS_CONFIG", "./jobs.yaml"),
-		Executor:  getEnv("EXECUTOR", "docker"),
-		LogLevel:  getEnv("LOG_LEVEL", "info"),
-		ProjectID: getEnv("PROJECT_ID", "fake-project"),
-		Region:    getEnv("REGION", "us-central1"),
+		Port:                 getEnv("PORT", "8123"),
+		JobsFile:             getEnv("JOBS_CONFIG", "./jobs.yaml"),
+		Executor:             getEnv("EXECUTOR", "docker"),
+		LogLevel:             getEnv("LOG_LEVEL", "info"),
+		ProjectID:            getEnv("PROJECT_ID", "fake-project"),
+		Region:               getEnv("REGION", "us-central1"),
+		ForwardContainerLogs: getEnvBool("FORWARD_CONTAINER_LOGS", false),
 	}
 
 	jobs, err := loadJobsConfig(cfg.JobsFile)
@@ -75,4 +78,17 @@ func getEnv(key, fallback string) string {
 		return v
 	}
 	return fallback
+}
+
+func getEnvBool(key string, fallback bool) bool {
+	v := os.Getenv(key)
+	if v == "" {
+		return fallback
+	}
+	switch strings.ToLower(v) {
+	case "1", "true", "yes", "on":
+		return true
+	default:
+		return false
+	}
 }
