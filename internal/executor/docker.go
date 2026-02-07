@@ -10,7 +10,6 @@ import (
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/client"
 	"github.com/docker/docker/pkg/stdcopy"
-	"github.com/docker/docker/api/types"
 	"github.com/matthewmarion/cloud-run-jobs-emulator/internal/state"
 )
 
@@ -141,7 +140,7 @@ func (e *DockerExecutor) Run(exec *state.Execution, env map[string]string) {
 }
 
 func (e *DockerExecutor) streamContainerLogs(ctx context.Context, containerID string, logger *slog.Logger) {
-	rc, err := e.client.ContainerLogs(ctx, containerID, types.ContainerLogsOptions{
+	rc, err := e.client.ContainerLogs(ctx, containerID, container.LogsOptions{
 		ShowStdout: true,
 		ShowStderr: true,
 		Follow:     true,
