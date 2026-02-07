@@ -33,6 +33,7 @@ type Config struct {
 	Region               string
 	ForwardContainerLogs bool
 	DockerNetwork        string
+	DockerExtraHosts     []string
 	Jobs                 *JobsConfig
 }
 
@@ -46,6 +47,7 @@ func Load() (*Config, error) {
 		Region:               getEnv("REGION", "us-central1"),
 		ForwardContainerLogs: getEnvBool("FORWARD_CONTAINER_LOGS", false),
 		DockerNetwork:        getEnv("DOCKER_NETWORK", "auto"),
+		DockerExtraHosts:     parseExtraHosts(os.Getenv("DOCKER_EXTRA_HOSTS")),
 	}
 
 	jobs, err := loadJobsConfig(cfg.JobsFile)
@@ -80,6 +82,24 @@ func getEnv(key, fallback string) string {
 		return v
 	}
 	return fallback
+}
+
+// parseExtraHosts splits a comma-separated list of host:ip mappings (e.g.
+// "host.docker.internal:host-gateway,other:1.2.3.4") into a string slice
+// suitable for Docker's HostConfig.ExtraHosts.
+func parseExtraHosts(val string) []string {
+	if val == "" {
+		return nil
+	}
+	parts := strings.Split(val, ",")
+	hosts := make([]string, 0, len(parts))
+	for _, p := range parts {
+		p = strings.TrimSpace(p)
+		if p != "" {
+			hosts = append(hosts, p)
+		}
+	}
+	return hosts
 }
 
 func getEnvBool(key string, fallback bool) bool {

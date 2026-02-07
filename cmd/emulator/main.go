@@ -41,6 +41,7 @@ func main() {
 		exec, err = executor.NewDockerExecutor(executor.DockerExecutorOpts{
 			ForwardLogs: cfg.ForwardContainerLogs,
 			Network:     cfg.DockerNetwork,
+			ExtraHosts:  cfg.DockerExtraHosts,
 		})
 		if err != nil {
 			slog.Error("failed to create docker executor", "error", err)

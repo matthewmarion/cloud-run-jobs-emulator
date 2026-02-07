@@ -24,12 +24,17 @@ type DockerExecutorOpts struct {
 	// container. "host" uses host networking. Any other value is treated as a
 	// network name to join.
 	Network string
+	// ExtraHosts is a list of host:ip mappings to inject into spawned containers
+	// (equivalent to docker run --add-host). Useful for e.g.
+	// "host.docker.internal:host-gateway" so containers can reach the Docker host.
+	ExtraHosts []string
 }
 
 type DockerExecutor struct {
 	client      *client.Client
 	forwardLogs bool
 	network     string // resolved network name (empty means host mode)
+	extraHosts  []string
 }
 
 func NewDockerExecutor(opts DockerExecutorOpts) (*DockerExecutor, error) {
@@ -40,7 +45,7 @@ func NewDockerExecutor(opts DockerExecutorOpts) (*DockerExecutor, error) {
 
 	netName := resolveNetwork(cli, opts.Network)
 
-	return &DockerExecutor{client: cli, forwardLogs: opts.ForwardLogs, network: netName}, nil
+	return &DockerExecutor{client: cli, forwardLogs: opts.ForwardLogs, network: netName, extraHosts: opts.ExtraHosts}, nil
 }
 
 // resolveNetwork determines which Docker network spawned containers should join.
@@ -143,7 +148,9 @@ func (e *DockerExecutor) Run(exec *state.Execution, env map[string]string) {
 
 	logger.Info("creating container", "network", e.networkDescription())
 
-	hostCfg := &container.HostConfig{}
+	hostCfg := &container.HostConfig{
+		ExtraHosts: e.extraHosts,
+	}
 	var netCfg *network.NetworkingConfig
 
 	if e.network != "" {

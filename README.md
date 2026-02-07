@@ -33,7 +33,7 @@ services:
 
 #### Networking
 
-When running inside Docker Compose, the emulator **automatically detects** the Compose network and attaches spawned job containers to it. This means job containers can resolve `host.docker.internal` and other Compose service names out of the box — no extra configuration needed.
+When running inside Docker Compose, the emulator **automatically detects** the Compose network and attaches spawned job containers to it. This means job containers can resolve other Compose service names out of the box — no extra configuration needed.
 
 If auto-detection doesn't suit your setup, override it with `DOCKER_NETWORK`:
 
@@ -44,6 +44,17 @@ environment:
   # Or fall back to host networking (legacy behaviour)
   DOCKER_NETWORK: host
 ```
+
+##### Reaching the Docker Host
+
+If your job containers need to reach processes running directly on the host machine (e.g. a Python dev server on `localhost:8000`), add the `DOCKER_EXTRA_HOSTS` env var:
+
+```yaml
+environment:
+  DOCKER_EXTRA_HOSTS: "host.docker.internal:host-gateway"
+```
+
+This injects `--add-host host.docker.internal:host-gateway` into every spawned container, so they can call `http://host.docker.internal:8000/...` to reach host-local services. Combine this with a `CALLBACK_URL` like `http://host.docker.internal:8000/callback` in your job config for local dev workflows where both Docker containers and bare-metal processes need to talk to each other.
 
 ### From Source
 
@@ -83,6 +94,7 @@ Jobs can also be created at runtime via the `CreateJob` API.
 | `REGION` | `us-central1` | Default region |
 | `FORWARD_CONTAINER_LOGS` | `false` | When `true` (or `1`/`yes`/`on`), stream container stdout/stderr to the emulator logs. Useful for debugging failing jobs. |
 | `DOCKER_NETWORK` | `auto` | Docker network for spawned job containers. `auto` detects the emulator's own network (e.g. the Compose network), `host` uses host networking, or pass an explicit network name. |
+| `DOCKER_EXTRA_HOSTS` | _(none)_ | Comma-separated `host:ip` mappings injected into spawned containers (equivalent to `docker run --add-host`). Example: `host.docker.internal:host-gateway` lets job containers reach the Docker host. |
 
 ## Client Setup
 
