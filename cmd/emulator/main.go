@@ -38,12 +38,14 @@ func main() {
 	var exec executor.Executor
 	switch cfg.Executor {
 	case "docker":
-		exec, err = executor.NewDockerExecutor()
+		exec, err = executor.NewDockerExecutor(executor.DockerExecutorOpts{
+			ForwardLogs: cfg.ForwardContainerLogs,
+		})
 		if err != nil {
 			slog.Error("failed to create docker executor", "error", err)
 			os.Exit(1)
 		}
-		slog.Info("using docker executor")
+		slog.Info("using docker executor", "forward_container_logs", cfg.ForwardContainerLogs)
 	case "subprocess":
 		exec = executor.NewSubprocessExecutor()
 		slog.Info("using subprocess executor")
